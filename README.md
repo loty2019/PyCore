@@ -1,4 +1,4 @@
-# Pixelink Camera Python Guide
+# PyCore Dev Guide
 
 A comprehensive guide and working examples for capturing images from Pixelink cameras using Python and the Pixelink SDK.
 
