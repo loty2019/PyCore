@@ -4,28 +4,25 @@ A comprehensive guide and working examples for capturing images from Pixelink ca
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Quick Reference Cheat Sheet](#quick-reference-cheat-sheet)
-- [Understanding the Code](#understanding-the-code)
-- [Image Formats](#image-formats)
-- [Camera Settings](#camera-settings)
-- [Advanced Features](#advanced-features)
-- [API Reference](#api-reference)
-- [Troubleshooting](#troubleshooting)
-- [Sample Code Snippets](#sample-code-snippets)
-- [Performance Tips](#performance-tips)
+- [Overview](#-overview)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Quick Reference Cheat Sheet](#-quick-reference-cheat-sheet)
+- [Understanding the Code](#-understanding-the-code)
+- [Image Formats](#️-image-formats)
+- [Camera Settings](#️-camera-settings)
+- [Advanced Features](#-advanced-features-1)
+- [API Reference](#-api-reference)
+- [Troubleshooting](#-troubleshooting)
+- [Sample Code Snippets](#-sample-code-snippets)
+- [Performance Tips](#-performance-tips-1)
 
 ---
 
 ## 🎯 Overview
 
-This project provides Python scripts to capture image# Time-lapse with settings file
-PxLApi.loadSettings(hCamera, "timelapse_config.pfs")
-# ... capture loop ...
-```elink cameras. The code is based on the **Pixelink Python wrapper** (`pixelinkWrapper`), which is a thin wrapper around the native Pixelink 4.0 API.
+This project provides Python scripts to capture images from Pixelink cameras. The code is based on the **Pixelink Python wrapper** (`pixelinkWrapper`), which is a thin wrapper around the native Pixelink 4.0 API.
 
 **Supported Cameras:**
 
@@ -205,17 +202,17 @@ PxLApi.uninitialize(hCamera)
 
 ### Common Operations Quick Syntax
 
-| Operation | Code |
-|-----------|------|
-| **Get Exposure** | `ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.EXPOSURE)` <br> `exposure = ret[2][0]` |
-| **Set Exposure** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,` <br> `PxLApi.FeatureFlags.MANUAL, [50.0])` |
-| **Auto Exposure** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,` <br> `PxLApi.FeatureFlags.AUTO, [])` |
-| **Get Gain** | `ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.GAIN)` <br> `gain = ret[2][0]` |
-| **Set Gain** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.GAIN,` <br> `PxLApi.FeatureFlags.MANUAL, [6.0])` |
-| **Start Stream** | `PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)` |
-| **Stop Stream** | `PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)` |
-| **Save Settings** | `PxLApi.saveSettings(hCamera, "config.pfs")` |
-| **Load Settings** | `PxLApi.loadSettings(hCamera, "config.pfs")` |
+| Operation         | Code                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| **Get Exposure**  | `ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.EXPOSURE)` <br> `exposure = ret[2][0]`          |
+| **Set Exposure**  | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,` <br> `PxLApi.FeatureFlags.MANUAL, [50.0])` |
+| **Auto Exposure** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,` <br> `PxLApi.FeatureFlags.AUTO, [])`       |
+| **Get Gain**      | `ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.GAIN)` <br> `gain = ret[2][0]`                  |
+| **Set Gain**      | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.GAIN,` <br> `PxLApi.FeatureFlags.MANUAL, [6.0])`      |
+| **Start Stream**  | `PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)`                                         |
+| **Stop Stream**   | `PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)`                                          |
+| **Save Settings** | `PxLApi.saveSettings(hCamera, "config.pfs")`                                                       |
+| **Load Settings** | `PxLApi.loadSettings(hCamera, "config.pfs")`                                                       |
 
 ### Image Format Constants
 
@@ -567,7 +564,7 @@ try:
             print(f"Frame {frameDesc.uFrameNumber}")
         else:
             print(f"Error: {ret[0]}")
-        
+
         time.sleep(0.1)  # 100ms delay
 
 except KeyboardInterrupt:
@@ -638,14 +635,14 @@ PxLApi.FeatureFlags.PRESENCE  # Feature is present
 ### Common Pixel Formats
 
 | Format         | Description       | Bytes/Pixel |
-|----------------|-------------------|--------------|
-| `MONO8`        | 8-bit grayscale   | 1            |
-| `MONO16`       | 16-bit grayscale  | 2            |
-| `BAYER8_GRBG`  | 8-bit Bayer GRBG  | 1            |
-| `BAYER16_GRBG` | 16-bit Bayer GRBG | 2            |
-| `RGB24`        | 24-bit RGB        | 3            |
-| `RGB48`        | 48-bit RGB        | 6            |
-| `YUV422`       | YUV 4:2:2         | 2            |
+| -------------- | ----------------- | ----------- |
+| `MONO8`        | 8-bit grayscale   | 1           |
+| `MONO16`       | 16-bit grayscale  | 2           |
+| `BAYER8_GRBG`  | 8-bit Bayer GRBG  | 1           |
+| `BAYER16_GRBG` | 16-bit Bayer GRBG | 2           |
+| `RGB24`        | 24-bit RGB        | 3           |
+| `RGB48`        | 48-bit RGB        | 6           |
+| `YUV422`       | YUV 4:2:2         | 2           |
 
 ### Helper Functions
 
