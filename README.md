@@ -314,6 +314,92 @@ with open(fileName, "wb") as file:
 - Simple binary write operation
 - No additional libraries needed for JPEG/BMP
 
+### ⚠️ Critical Implementation Patterns
+
+#### Return Value Pattern
+
+**Every** API call returns a tuple: `(return_code, data)`
+
+```python
+ret = PxLApi.someFunction(hCamera)
+if PxLApi.apiSuccess(ret[0]):
+    result = ret[1]  # Only access on success - data location varies!
+else:
+    print(f"Error: {ret[0]}")
+```
+
+**Important**: Never access `ret[1]` or `ret[2]` without checking `ret[0]` first!
+
+#### Feature API Data Location
+
+When using `getFeature()`, the data is in **`ret[2]`**, not `ret[1]`:
+
+```python
+# Get feature - note ret[2]!
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.EXPOSURE)
+if PxLApi.apiSuccess(ret[0]):
+    value = ret[2][0]  # Data is in ret[2], not ret[1]!
+    print(f"Exposure: {value} ms")
+
+# Set feature
+PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,
+                  PxLApi.FeatureFlags.MANUAL, [50.0])
+```
+
+#### Camera Handle is Sacred
+
+The camera handle from `initialize()` must be passed to **all** subsequent operations:
+
+```python
+ret = PxLApi.initialize(0)
+hCamera = ret[1]  # ALWAYS store this!
+
+# All operations need hCamera:
+PxLApi.getFeature(hCamera, ...)
+PxLApi.setStreamState(hCamera, ...)
+PxLApi.getNextFrame(hCamera, ...)
+PxLApi.uninitialize(hCamera)  # Don't forget cleanup!
+```
+
+Loss of this handle means you must re-initialize the camera.
+
+#### Buffer Size Calculation - Never Hardcode!
+
+**Always** calculate buffer size dynamically:
+
+```python
+# ✅ CORRECT - Calculate from camera settings
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.ROI)
+width = ret[2][PxLApi.RoiParams.WIDTH]
+height = ret[2][PxLApi.RoiParams.HEIGHT]
+
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.PIXEL_FORMAT)
+pixel_format = int(ret[2][0])
+
+buffer_size = width * height * PxLApi.getBytesPerPixel(pixel_format)
+rawImage = create_string_buffer(buffer_size)
+
+# ❌ WRONG - Hardcoded sizes will fail!
+rawImage = create_string_buffer(1000000)  # Don't do this!
+```
+
+Formula: `(width / addressing_x) × (height / addressing_y) × bytes_per_pixel`
+
+#### String Decoding Pattern
+
+Camera info returns bytes - always decode:
+
+```python
+info = PxLApi.getCameraInfo(hCamera)[1]
+
+# ✅ CORRECT - Decode bytes to string
+model = info.ModelName.decode('utf-8')
+serial = info.SerialNumber.decode('utf-8')
+
+# ❌ WRONG - Using bytes directly
+print(info.ModelName)  # Prints: b'B701' (not clean!)
+```
+
 ---
 
 ## 🖼️ Image Formats
@@ -958,6 +1044,137 @@ else:
 
 ---
 
+## ❌ Common Pitfalls & Best Practices
+
+### What NOT to Do
+
+1. **❌ Don't access return data without checking success**
+
+   ```python
+   # WRONG!
+   ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.EXPOSURE)
+   value = ret[2][0]  # Might crash if ret[0] is error!
+
+   # CORRECT!
+   ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.EXPOSURE)
+   if PxLApi.apiSuccess(ret[0]):
+       value = ret[2][0]  # Safe to access
+   ```
+
+2. **❌ Don't uninitialize camera while streaming**
+
+   ```python
+   # WRONG!
+   PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+   PxLApi.uninitialize(hCamera)  # BAD - still streaming!
+
+   # CORRECT!
+   PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+   # ... capture frames ...
+   PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)  # Stop first!
+   PxLApi.uninitialize(hCamera)  # Now safe
+   ```
+
+3. **❌ Don't hardcode buffer sizes**
+
+   ```python
+   # WRONG!
+   rawImage = create_string_buffer(2000000)  # Magic number!
+
+   # CORRECT!
+   buffer_size = determine_raw_image_size(hCamera)
+   rawImage = create_string_buffer(buffer_size)
+   ```
+
+4. **❌ Don't assume frame capture always succeeds**
+
+   ```python
+   # WRONG!
+   ret = PxLApi.getNextFrame(hCamera, rawImage)
+   frameDesc = ret[1]  # Might fail!
+
+   # CORRECT!
+   MAX_RETRIES = 4
+   for attempt in range(MAX_RETRIES):
+       ret = PxLApi.getNextFrame(hCamera, rawImage)
+       if PxLApi.apiSuccess(ret[0]):
+           frameDesc = ret[1]
+           break
+   ```
+
+5. **❌ Don't modify vendored library files**
+
+   - Never edit files in `pixelinkPythonWrapper-master/`
+   - It's a vendored library - your changes will be lost on updates
+
+6. **❌ Don't forget to decode camera info strings**
+
+   ```python
+   # WRONG!
+   print(info.ModelName)  # Prints: b'B701'
+
+   # CORRECT!
+   print(info.ModelName.decode('utf-8'))  # Prints: B701
+   ```
+
+### Development Best Practices
+
+#### When Writing New Scripts
+
+1. **Start from `capture_image.py`** - It's the canonical reference
+2. **Import with error handling** - Use the wmic workaround pattern
+3. **Create buffers correctly** - Use `from ctypes import create_string_buffer`
+4. **Check all return codes** - Use `PxLApi.apiSuccess(ret[0])` before accessing data
+5. **Manage streaming state** - Start before capture, stop before uninitialize
+6. **Use retry loops** - `getNextFrame()` can timeout, retry 3-4 times
+
+#### Testing Patterns
+
+1. **Always test with camera connected** - These are hardware integration scripts
+2. **Check Device Manager** - Camera must appear under "Imaging devices" (Windows)
+3. **No unit tests** - This is a hardware interface project; use manual verification
+4. **Verify image output** - Check `captured_images/` directory for results
+5. **Test error conditions** - Disconnect camera, use wrong settings, etc.
+
+#### Auto vs Manual Modes
+
+```python
+# Auto mode: pass empty list, use AUTO flag
+PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,
+                  PxLApi.FeatureFlags.AUTO, [])
+
+# Manual mode: pass parameters, use MANUAL flag
+PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,
+                  PxLApi.FeatureFlags.MANUAL, [50.0])
+
+# One-push: trigger once, then manual
+PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,
+                  PxLApi.FeatureFlags.ONEPUSH, [])
+```
+
+### Platform-Specific Notes
+
+#### Windows
+
+- **Primary platform** for Pixelink SDK
+- **wmic workaround required** for Windows 10 21H1+ and Windows 11
+- SDK installs to: `C:\Program Files\Pixelink\`
+- Check Device Manager for camera (under "Imaging devices")
+
+#### Linux
+
+- Supported via `libPxLApi.so`
+- See `samples/Linux/` for platform-specific examples
+- No wmic issues on Linux
+
+#### macOS
+
+- **NOT SUPPORTED** - Pixelink SDK not available for macOS
+- This project can be edited on macOS but cannot run
+- Development on macOS is for documentation/script writing only
+
+---
+
 ## 📚 Additional Resources
 
 ### Official Documentation
@@ -990,6 +1207,36 @@ else:
 - Phone: Contact information on Navitar website
 - Email: Available through support portal
 
+### Key Reference Files in This Project
+
+When working on specific features, reference these files:
+
+| Feature                   | Reference File                                    |
+| ------------------------- | ------------------------------------------------- |
+| **Buffer allocation**     | `capture_image.py` → `determine_raw_image_size()` |
+| **Error handling**        | `capture_image.py` → `get_raw_image()` retry loop |
+| **Import workaround**     | `capture_image.py` → Lines 13-35 (wmic fix)       |
+| **Camera info**           | `test_autofocus.py` → Feature detection pattern   |
+| **Format conversion**     | `capture_image.py` → `get_snapshot()` function    |
+| **Windows compatibility** | `capture_image.py` → subprocess patching pattern  |
+
+### Project File Structure
+
+```
+PyCore/
+├── capture_image.py              # Main reference implementation
+├── test_autofocus.py             # Feature detection example
+├── README.md                     # This comprehensive guide
+├── email_to_pixelink.txt        # Support email template
+├── captured_images/             # Output directory
+└── pixelinkPythonWrapper-master/ # Vendored library (don't modify)
+    ├── pixelinkWrapper/
+    │   └── pixelink.py          # API wrapper
+    └── samples/
+        ├── Windows/             # Official Windows samples
+        └── Linux/               # Official Linux samples
+```
+
 ### Learning Path
 
 1. ✅ **You are here**: Basic image capture
@@ -1002,14 +1249,40 @@ else:
 
 ---
 
-## 📝 Notes
+## 📝 Important Notes
 
-- The script includes a workaround for Windows `wmic` deprecation
-- All camera operations use the handle returned by `initialize()`
-- Always call `uninitialize()` when done
-- Use `setStreamState(STOP)` before uninitializing
-- Buffer allocation is critical for performance
-- Frame capture is a blocking operation
+### Critical Requirements
+
+- ⚠️ **Return codes**: ALWAYS check `PxLApi.apiSuccess(ret[0])` before accessing data
+- ⚠️ **Camera handle**: Store `hCamera = ret[1]` - needed for ALL operations
+- ⚠️ **Streaming state**: Must call `setStreamState(STOP)` before `uninitialize()`
+- ⚠️ **Buffer allocation**: NEVER hardcode sizes - calculate from camera settings
+- ⚠️ **Blocking calls**: `getNextFrame()` blocks thread until frame available
+- ⚠️ **Retry logic**: Implement 3-4 retry attempts for timeout errors
+
+### Data Access Patterns
+
+- 📍 `getFeature()` returns data in **`ret[2]`**, not `ret[1]`
+- 📍 `getCameraInfo()` returns data in `ret[1]`
+- 📍 `getNextFrame()` returns frame descriptor in `ret[1]`
+- 📍 Camera info strings are **bytes** - use `.decode('utf-8')`
+
+### Platform-Specific
+
+- 🪟 **Windows**: wmic workaround required (included in `capture_image.py`)
+- 🐧 **Linux**: Full support via `libPxLApi.so`
+- 🍎 **macOS**: NOT SUPPORTED - no Pixelink SDK available
+
+### Image Format Selection
+
+- 🔬 **Scientific imaging**: Use BMP or raw formats (NOT JPEG)
+- 📊 **JPEG compression**: Introduces artifacts unsuitable for quantitative analysis
+- 💾 **File sizes**: JPEG (~80KB) vs BMP (~1.3MB) for typical image
+
+### Camera Capabilities (B701 Specific)
+
+- ✅ **Supported**: Exposure, Gain, Gamma, Sharpness
+- ❌ **NOT Supported**: Focus (fixed lens), Brightness, Saturation, White Balance, Zoom, Iris
 
 ---
 
