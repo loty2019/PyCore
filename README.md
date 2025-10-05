@@ -8,18 +8,24 @@ A comprehensive guide and working examples for capturing images from Pixelink ca
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Quick Reference Cheat Sheet](#quick-reference-cheat-sheet)
 - [Understanding the Code](#understanding-the-code)
 - [Image Formats](#image-formats)
+- [Camera Settings](#camera-settings)
 - [Advanced Features](#advanced-features)
 - [API Reference](#api-reference)
 - [Troubleshooting](#troubleshooting)
 - [Sample Code Snippets](#sample-code-snippets)
+- [Performance Tips](#performance-tips)
 
 ---
 
 ## 🎯 Overview
 
-This project provides Python scripts to capture images from Pixelink cameras. The code is based on the **Pixelink Python wrapper** (`pixelinkWrapper`), which is a thin wrapper around the native Pixelink 4.0 API.
+This project provides Python scripts to capture image# Time-lapse with settings file
+PxLApi.loadSettings(hCamera, "timelapse_config.pfs")
+# ... capture loop ...
+```elink cameras. The code is based on the **Pixelink Python wrapper** (`pixelinkWrapper`), which is a thin wrapper around the native Pixelink 4.0 API.
 
 **Supported Cameras:**
 
@@ -141,6 +147,90 @@ Image capture completed successfully!
 
 ---
 
+## ⚡ Quick Reference Cheat Sheet
+
+For experienced users who need quick syntax lookups:
+
+### Initialize & Cleanup
+
+```python
+from pixelinkWrapper import PxLApi
+
+# Initialize camera (0 = first camera)
+ret = PxLApi.initialize(0)
+hCamera = ret[1]
+
+# Always check success
+if PxLApi.apiSuccess(ret[0]):
+    # Success - use hCamera
+    pass
+
+# Cleanup when done
+PxLApi.uninitialize(hCamera)
+```
+
+### Quick Capture (Copy & Paste)
+
+```python
+from pixelinkWrapper import PxLApi
+from ctypes import create_string_buffer
+
+# Initialize
+ret = PxLApi.initialize(0)
+hCamera = ret[1]
+
+# Get buffer size
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.ROI)
+width = int(ret[2][PxLApi.RoiParams.WIDTH])
+height = int(ret[2][PxLApi.RoiParams.HEIGHT])
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.PIXEL_FORMAT)
+pixel_format = int(ret[2][0])
+buffer_size = width * height * PxLApi.getBytesPerPixel(pixel_format)
+
+# Capture
+rawImage = create_string_buffer(buffer_size)
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+ret = PxLApi.getNextFrame(hCamera, rawImage)
+frameDesc = ret[1]
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)
+
+# Save as JPEG
+ret = PxLApi.formatImage(rawImage, frameDesc, PxLApi.ImageFormat.JPEG)
+with open("image.jpg", "wb") as f:
+    f.write(ret[1])
+
+# Cleanup
+PxLApi.uninitialize(hCamera)
+```
+
+### Common Operations Quick Syntax
+
+| Operation | Code |
+|-----------|------|
+| **Get Exposure** | `ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.EXPOSURE)` <br> `exposure = ret[2][0]` |
+| **Set Exposure** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,` <br> `PxLApi.FeatureFlags.MANUAL, [50.0])` |
+| **Auto Exposure** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,` <br> `PxLApi.FeatureFlags.AUTO, [])` |
+| **Get Gain** | `ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.GAIN)` <br> `gain = ret[2][0]` |
+| **Set Gain** | `PxLApi.setFeature(hCamera, PxLApi.FeatureId.GAIN,` <br> `PxLApi.FeatureFlags.MANUAL, [6.0])` |
+| **Start Stream** | `PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)` |
+| **Stop Stream** | `PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)` |
+| **Save Settings** | `PxLApi.saveSettings(hCamera, "config.pfs")` |
+| **Load Settings** | `PxLApi.loadSettings(hCamera, "config.pfs")` |
+
+### Image Format Constants
+
+```python
+PxLApi.ImageFormat.JPEG      # Compressed JPEG
+PxLApi.ImageFormat.BMP       # Windows Bitmap
+PxLApi.ImageFormat.TIFF      # TIFF format
+PxLApi.ImageFormat.PNG       # PNG format
+PxLApi.ImageFormat.RAW_BGR24 # 24-bit BGR raw
+PxLApi.ImageFormat.RAW_RGB48 # 48-bit RGB raw
+PxLApi.ImageFormat.RAW_MONO8 # 8-bit grayscale
+```
+
+---
+
 ## 📚 Understanding the Code
 
 ### Core Workflow
@@ -254,11 +344,9 @@ The Pixelink API supports multiple image formats:
 
 ---
 
-## 🎛️ Advanced Features
+## 🎛️ Camera Settings
 
-### 1. Camera Settings
-
-#### Get Camera Information
+### Get Camera Information
 
 ```python
 camera_info = PxLApi.getCameraInfo(hCamera)
@@ -269,7 +357,7 @@ if PxLApi.apiSuccess(camera_info[0]):
     print(f"Firmware: {info.FirmwareVersion.decode('utf-8')}")
 ```
 
-#### Adjust Exposure
+### Adjust Exposure
 
 ```python
 # Get current exposure
@@ -284,7 +372,7 @@ ret = PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,
                         PxLApi.FeatureFlags.MANUAL, params)
 ```
 
-#### Adjust Gain
+### Adjust Gain
 
 ```python
 # Get current gain
@@ -298,14 +386,14 @@ ret = PxLApi.setFeature(hCamera, PxLApi.FeatureId.GAIN,
                         PxLApi.FeatureFlags.MANUAL, params)
 ```
 
-#### Enable Auto Exposure
+### Enable Auto Exposure
 
 ```python
 ret = PxLApi.setFeature(hCamera, PxLApi.FeatureId.EXPOSURE,
                         PxLApi.FeatureFlags.AUTO, [])
 ```
 
-### 2. ROI (Region of Interest)
+### ROI (Region of Interest)
 
 Capture only a portion of the sensor:
 
@@ -321,7 +409,7 @@ ret = PxLApi.setFeature(hCamera, PxLApi.FeatureId.ROI,
                         PxLApi.FeatureFlags.MANUAL, roi_params)
 ```
 
-### 3. White Balance
+### White Balance
 
 ```python
 # Auto white balance
@@ -334,7 +422,69 @@ ret = PxLApi.setFeature(hCamera, PxLApi.FeatureId.WHITE_SHADING,
                         PxLApi.FeatureFlags.MANUAL, wb_params)
 ```
 
-### 4. Triggering
+### Gamma Correction
+
+```python
+# Get current gamma
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.GAMMA)
+current_gamma = ret[2][0]
+print(f"Current gamma: {current_gamma}")
+
+# Set gamma (typical values: 1.0 - 2.2)
+PxLApi.setFeature(hCamera, PxLApi.FeatureId.GAMMA,
+                  PxLApi.FeatureFlags.MANUAL, [1.8])
+```
+
+### Frame Rate
+
+```python
+# Get actual frame rate
+ret = PxLApi.getFeature(hCamera, PxLApi.FeatureId.ACTUAL_FRAME_RATE)
+fps = ret[2][0]
+print(f"Current frame rate: {fps} FPS")
+```
+
+### Save and Load Camera Settings
+
+```python
+# Save current settings to file
+ret = PxLApi.saveSettings(hCamera, "my_camera_config.pfs")
+if PxLApi.apiSuccess(ret[0]):
+    print("Settings saved successfully")
+
+# Load settings from file
+ret = PxLApi.loadSettings(hCamera, "my_camera_config.pfs")
+if PxLApi.apiSuccess(ret[0]):
+    print("Settings loaded successfully")
+
+# Save to factory defaults
+PxLApi.saveSettings(hCamera, PxLApi.Settings.SETTINGS_FACTORY)
+
+# Load factory defaults
+PxLApi.loadSettings(hCamera, PxLApi.Settings.SETTINGS_FACTORY)
+```
+
+### Check Feature Support
+
+```python
+# Check if a feature is supported
+ret = PxLApi.getCameraFeatures(hCamera, PxLApi.FeatureId.FOCUS)
+if PxLApi.apiSuccess(ret[0]):
+    print("Focus is supported")
+    features = ret[1]
+    # Get min/max values
+    for param in features.Params:
+        print(f"Min: {param.fMinValue}")
+        print(f"Max: {param.fMaxValue}")
+else:
+    print("Focus is NOT supported")
+```
+
+---
+
+## 🚀 Advanced Features
+
+### Triggering
 
 #### Software Trigger
 
@@ -361,7 +511,7 @@ ret = PxLApi.setFeature(hCamera, PxLApi.FeatureId.TRIGGER,
 ret = PxLApi.getNextFrame(hCamera, rawImage)
 ```
 
-### 5. Continuous Capture
+### Continuous Capture
 
 ```python
 # Capture 10 images
@@ -379,6 +529,53 @@ for i in range(10):
         print(f"Captured frame {i+1}/10")
 
     time.sleep(0.1)  # 100ms delay
+```
+
+---
+
+### Stream Control
+
+```python
+# Start streaming
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+
+# Pause streaming
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.PAUSE)
+
+# Stop streaming
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)
+
+# Check current stream state
+ret = PxLApi.getStreamState(hCamera)
+if ret[1] == PxLApi.StreamState.START:
+    print("Camera is streaming")
+```
+
+### Continuous Capture Loop
+
+```python
+import time
+
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+
+try:
+    while True:
+        ret = PxLApi.getNextFrame(hCamera, rawImage)
+        if PxLApi.apiSuccess(ret[0]):
+            frameDesc = ret[1]
+            # Process frame here
+            print(f"Frame {frameDesc.uFrameNumber}")
+        else:
+            print(f"Error: {ret[0]}")
+        
+        time.sleep(0.1)  # 100ms delay
+
+except KeyboardInterrupt:
+    print("Stopping...")
+
+finally:
+    PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)
+    PxLApi.uninitialize(hCamera)
 ```
 
 ---
@@ -426,6 +623,41 @@ else:
 PxLApi.StreamState.START   # Start streaming
 PxLApi.StreamState.STOP    # Stop streaming
 PxLApi.StreamState.PAUSE   # Pause streaming
+```
+
+### Feature Flags
+
+```python
+PxLApi.FeatureFlags.MANUAL    # Manual control
+PxLApi.FeatureFlags.AUTO      # Automatic control
+PxLApi.FeatureFlags.ONEPUSH   # One-time auto adjustment
+PxLApi.FeatureFlags.OFF       # Feature disabled
+PxLApi.FeatureFlags.PRESENCE  # Feature is present
+```
+
+### Common Pixel Formats
+
+| Format         | Description       | Bytes/Pixel |
+|----------------|-------------------|--------------|
+| `MONO8`        | 8-bit grayscale   | 1            |
+| `MONO16`       | 16-bit grayscale  | 2            |
+| `BAYER8_GRBG`  | 8-bit Bayer GRBG  | 1            |
+| `BAYER16_GRBG` | 16-bit Bayer GRBG | 2            |
+| `RGB24`        | 24-bit RGB        | 3            |
+| `RGB48`        | 48-bit RGB        | 6            |
+| `YUV422`       | YUV 4:2:2         | 2            |
+
+### Helper Functions
+
+```python
+# Get bytes per pixel for a pixel format
+pixel_format = PxLApi.PixelFormat.MONO8
+bytes_per_pixel = PxLApi.getBytesPerPixel(pixel_format)
+
+# Calculate image size
+width = 1920
+height = 1080
+image_size = PxLApi.getBytesPerPixel(pixel_format) * width * height
 ```
 
 ---
@@ -642,6 +874,93 @@ if PxLApi.apiSuccess(ret[0]):
 
 ---
 
+## ⚡ Performance Tips
+
+### Optimize Frame Capture
+
+```python
+# Pre-allocate buffer ONCE outside loop
+buffer_size = determine_raw_image_size(hCamera)
+rawImage = create_string_buffer(buffer_size)
+
+# Reuse buffer in loop - much faster!
+for i in range(100):
+    ret = PxLApi.getNextFrame(hCamera, rawImage)
+    # Process frame...
+```
+
+### Keep Stream Running
+
+```python
+# DON'T do this (slow - stops/starts stream each time)
+for i in range(100):
+    PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+    ret = PxLApi.getNextFrame(hCamera, rawImage)
+    PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)
+
+# DO this (fast - stream stays running)
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.START)
+for i in range(100):
+    ret = PxLApi.getNextFrame(hCamera, rawImage)
+    # Process...
+PxLApi.setStreamState(hCamera, PxLApi.StreamState.STOP)
+```
+
+### Retry Logic for Timeouts
+
+```python
+def get_frame_with_retry(hCamera, rawImage, max_retries=4):
+    """Capture frame with automatic retry on timeout"""
+    for attempt in range(max_retries):
+        ret = PxLApi.getNextFrame(hCamera, rawImage)
+        if PxLApi.apiSuccess(ret[0]):
+            return ret
+        elif ret[0] == PxLApi.ReturnCode.ApiCameraTimeoutError:
+            print(f"Timeout, retry {attempt+1}/{max_retries}")
+            continue
+        else:
+            # Different error - don't retry
+            return ret
+    return ret  # Return last attempt
+```
+
+### Error Handling Best Practices
+
+```python
+# Template for robust error handling
+ret = PxLApi.someFunction(hCamera, params)
+if PxLApi.apiSuccess(ret[0]):
+    # Success path
+    result = ret[1]
+    print(f"Success: {result}")
+else:
+    # Error path - handle specific errors
+    error_code = ret[0]
+    if error_code == PxLApi.ReturnCode.ApiInvalidHandleError:
+        print("ERROR: Invalid camera handle - reinitialize camera")
+    elif error_code == PxLApi.ReturnCode.ApiCameraTimeoutError:
+        print("WARNING: Camera timeout - will retry")
+    elif error_code == PxLApi.ReturnCode.ApiNotSupportedError:
+        print("INFO: Feature not supported on this camera")
+    else:
+        print(f"ERROR: Unknown error code {error_code}")
+```
+
+### Pro Tips
+
+1. ✅ **Always check return codes** with `apiSuccess()` before using data
+2. ✅ **Start stream before** calling `getNextFrame()`
+3. ✅ **Stop stream before** calling `uninitialize()`
+4. ✅ **Reuse buffers** instead of allocating new ones in loops
+5. ✅ **Keep streams running** for continuous capture
+6. ✅ **Implement retry logic** for timeout errors
+7. ✅ **Save settings** to files for reproducible configurations
+8. ✅ **Check feature support** before using advanced features
+9. ✅ **Use auto features** (exposure, gain) for quick setup
+10. ✅ **Calculate buffer size correctly** to avoid crashes
+
+---
+
 ## 📚 Additional Resources
 
 ### Official Documentation
@@ -716,5 +1035,20 @@ This code is provided as-is for use with Pixelink cameras. Based on official Pix
 
 **Last Updated**: October 4, 2025  
 **Camera Tested**: Pixelink B701 (Serial: 771001279)  
+**Supported Features**: Exposure, Gain, Gamma, Sharpness  
+**NOT Supported**: Focus, Brightness, Saturation, White Balance, Zoom, Iris  
 **SDK Version**: 10.0.0  
 **Python Version**: 3.11
+
+---
+
+## 📝 Notes
+
+- All operations require a valid camera handle from `initialize()`
+- The Pixelink B701 has a **fixed-focus lens** (no autofocus)
+- `getNextFrame()` is a **blocking call** - won't return until frame is available
+- Always call `setStreamState(STOP)` before `uninitialize()`
+- Buffer size calculation is critical - use `determine_raw_image_size()`
+- The wmic workaround is required for Windows 10 21H1+ and Windows 11
+- For scientific imaging, use **BMP or raw formats** (not JPEG)
+- JPEG compression introduces artifacts unsuitable for quantitative analysis
