@@ -1,0 +1,63 @@
+microscope-project/
+├── .env                        # SECRET - passwords go here
+├── .gitignore                  # Tell git what NOT to upload
+├── requirements.txt            # Dependencies we just created
+├── alembic.ini                 # Database migration config
+├── README.md                   # Project documentation
+│
+├── backend/
+│   ├── __init__.py
+│   ├── main.py                 # Entry point - FastAPI app
+│   ├── config.py               # Configuration settings
+│   │
+│   ├── database/
+│   │   ├── __init__.py
+│   │   ├── base.py             # Base for all models
+│   │   ├── session.py          # Database connection
+│   │   └── models.py           # Database tables as Python classes
+│   │
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── deps.py             # Dependencies (like get_db)
+│   │   └── routes/
+│   │       ├── __init__.py
+│   │       ├── images.py       # /api/images endpoints
+│   │       ├── jobs.py         # /api/jobs endpoints
+│   │       ├── control.py      # /api/control endpoints
+│   │       └── websocket.py    # /ws endpoints
+│   │
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── image.py            # Image data structures
+│   │   ├── job.py              # Job data structures
+│   │   └── control.py          # Control command structures
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── camera.py           # Camera control logic
+│   │   ├── stage.py            # Raspberry Pi communication
+│   │   ├── job_queue.py        # Job execution engine
+│   │   └── image_service.py    # Image saving, thumbnails
+│   │
+│   └── core/
+│       ├── __init__.py
+│       ├── security.py         # Authentication (future)
+│       └── watchdog.py         # Safety monitoring
+│
+├── frontend/
+│   ├── index.html
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       ├── app.js
+│       ├── api.js              # API calls
+│       └── viewer.js           # Image display
+│
+├── raspberry_pi/
+│   ├── motor_controller.py     # Runs on RPi
+│   ├── requirements.txt        # RPi dependencies
+│   └── config.py
+│
+├── images/                     # Full-size captures (auto-created)
+├── thumbnails/                 # Small previews (auto-created)
+└── logs/                       # Application logs (auto-created)
