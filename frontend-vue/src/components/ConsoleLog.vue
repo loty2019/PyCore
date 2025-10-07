@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <button @click="store.clearLogs()" class="clear-btn">Clear Logs</button>
+    <button @click="store.clearLogs()" class="btn clear-btn">Clear Logs</button>
   </div>
 </template>
 
@@ -44,59 +44,42 @@ watch(() => store.logs.length, async () => {
 
 <style scoped>
 .websocket-status {
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  background: #FFEBEE;
-  color: #C62828;
-  margin-bottom: 15px;
+  @apply px-3 py-2 rounded text-xs bg-red-50 text-red-800 mb-4;
 }
 
 .websocket-status.connected {
-  background: #E8F5E9;
-  color: #2E7D32;
+  @apply bg-green-50 text-green-800;
 }
 
 .log-container {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 15px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 10px;
+  @apply bg-gray-900 text-gray-300 p-4 rounded font-mono text-xs max-h-[300px] overflow-y-auto mb-2.5;
 }
 
 .log-entry {
-  margin-bottom: 5px;
+  @apply mb-1;
 }
 
 .log-entry.error {
-  color: #f44336;
+  @apply text-red-500;
 }
 
 .log-entry.success {
-  color: #4CAF50;
+  @apply text-green-500;
 }
 
 .log-entry.info {
-  color: #2196F3;
+  @apply text-blue-500;
 }
 
 .log-entry.warning {
-  color: #FF9800;
+  @apply text-orange-500;
 }
 
 .clear-btn {
-  width: 100%;
-  padding: 8px;
-  font-size: 12px;
-  background: #666;
+  @apply w-full py-2 text-xs bg-gray-600;
 }
 
 .clear-btn:hover {
-  background: #555;
+  @apply bg-gray-700;
 }
 </style>

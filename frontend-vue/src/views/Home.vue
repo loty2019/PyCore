@@ -48,34 +48,24 @@ onMounted(async () => {
 
 <style scoped>
 .home {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+  @apply max-w-screen-xl mx-auto p-5;
 }
 
 header {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  @apply bg-white p-5 rounded-lg mb-5 shadow-md;
 }
 
 header h1 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 28px;
+  @apply text-gray-800 mb-2.5 text-3xl;
 }
 
 header p {
-  color: #666;
-  margin-bottom: 15px;
+  @apply text-gray-600 mb-4;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  @apply gap-5 mb-5;
 }
 </style>

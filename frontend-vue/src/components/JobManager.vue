@@ -3,9 +3,9 @@
     <h2>⚙️ Job Control</h2>
 
     <div class="button-group">
-      <button @click="createTimelapse">⏱️ Timelapse</button>
-      <button @click="createGrid">🔲 Grid Scan</button>
-      <button @click="createZStack">📚 Z-Stack</button>
+      <button @click="createTimelapse" class="btn">⏱️ Timelapse</button>
+      <button @click="createGrid" class="btn">🔲 Grid Scan</button>
+      <button @click="createZStack" class="btn">📚 Z-Stack</button>
     </div>
 
     <div v-if="store.activeJobs.length > 0" class="job-list">
@@ -25,9 +25,9 @@
           <span class="progress-text">{{ job.progress }}/{{ job.total_steps }}</span>
         </div>
         <div class="job-actions">
-          <button @click="pauseJob(job.id)" v-if="job.status === 'running'" class="small">Pause</button>
-          <button @click="resumeJob(job.id)" v-if="job.status === 'paused'" class="small">Resume</button>
-          <button @click="cancelJob(job.id)" class="small danger">Cancel</button>
+          <button @click="pauseJob(job.id)" v-if="job.status === 'running'" class="btn btn-small">Pause</button>
+          <button @click="resumeJob(job.id)" v-if="job.status === 'paused'" class="btn btn-small">Resume</button>
+          <button @click="cancelJob(job.id)" class="btn btn-small btn-danger">Cancel</button>
         </div>
       </div>
     </div>
@@ -134,78 +134,46 @@ async function cancelJob(jobId: number) {
 
 <style scoped>
 .job-list {
-  margin-top: 15px;
+  @apply mt-4;
 }
 
 .job-list h3 {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
+  @apply text-sm text-gray-600 mb-2.5;
 }
 
 .job-item {
-  background: #f5f5f5;
-  padding: 12px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  @apply bg-gray-100 p-3 rounded mb-2.5;
 }
 
 .job-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  @apply flex justify-between items-center mb-2;
 }
 
 .job-type {
-  background: #2196F3;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 12px;
+  @apply bg-blue-500 text-white px-2 py-0.5 rounded-sm text-xs;
 }
 
 .job-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  @apply flex items-center gap-2.5 mb-2;
 }
 
 .progress-bar {
-  flex: 1;
-  height: 8px;
-  background: #ddd;
-  border-radius: 4px;
-  overflow: hidden;
+  @apply flex-1 h-2 bg-gray-300 rounded overflow-hidden;
 }
 
 .progress-fill {
-  height: 100%;
-  background: #4CAF50;
-  transition: width 0.3s;
+  @apply h-full bg-green-500 transition-all duration-300;
 }
 
 .progress-text {
-  font-size: 12px;
-  color: #666;
-  min-width: 60px;
+  @apply text-xs text-gray-600 min-w-[60px];
 }
 
 .job-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.job-actions button {
-  flex: 1;
-  padding: 6px 12px;
-  font-size: 12px;
+  @apply flex gap-1.5;
 }
 
 .no-jobs {
-  text-align: center;
-  padding: 20px;
-  color: #999;
+  @apply text-center p-5 text-gray-400;
 }
 </style>

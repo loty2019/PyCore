@@ -29,39 +29,27 @@ const wsStore = useWebSocketStore()
 
 <style scoped>
 .status-bar {
-  display: flex;
-  gap: 20px;
-  align-items: center;
+  @apply flex gap-5 items-center;
 }
 
 .status-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  @apply flex items-center gap-2 text-sm;
 }
 
 .status-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ccc;
-  transition: background 0.3s;
+  @apply w-3 h-3 rounded-full bg-gray-400 transition-colors;
 }
 
-.status-indicator.connected {
-  background: #4CAF50;
+.status-indicator.connected,
+.status-indicator.running {
+  @apply bg-green-500;
 }
 
 .status-indicator.disconnected {
-  background: #f44336;
-}
-
-.status-indicator.running {
-  background: #4CAF50;
+  @apply bg-red-500;
 }
 
 .status-indicator.stopped {
-  background: #FF9800;
+  @apply bg-orange-500;
 }
 </style>
