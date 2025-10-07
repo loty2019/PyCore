@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microscope Control System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-indicator.connected {
+            background: #4CAF50;
+        }
+
+        .status-indicator.disconnected {
+            background: #f44336;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
+
+        button.danger {
+            background: #f44336;
+        }
+
+        button.danger:hover {
+            background: #d32f2f;
+        }
+
+        button.success {
+            background: #4CAF50;
+        }
+
+        button.success:hover {
+            background: #45a049;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .position-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .position-display div {
+            margin-bottom: 5px;
+            font-family: monospace;
+        }
+
+        .stage-control {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stage-control button {
+            padding: 15px;
+        }
+
+        .stage-control .center {
+            background: #FF5722;
+        }
+
+        .stage-control .center:hover {
+            background: #E64A19;
+        }
+
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .image-item {
+            aspect-ratio: 1;
+            background: #f0f0f0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-entry.error {
+            color: #f44336;
+        }
+
+        .log-entry.success {
+            color: #4CAF50;
+        }
+
+        .log-entry.info {
+            color: #2196F3;
+        }
+
+        .websocket-status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #f5f5f5;
+            margin-bottom: 15px;
+        }
+
+        .websocket-status.connected {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .websocket-status.disconnected {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 Microscope Control System</h1>
+            <p>Proof of Concept Interface</p>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-indicator" id="camera-status"></div>
+                    <span>Camera</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="stage-status"></div>
+                    <span>Stage</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="db-status"></div>
+                    <span>Database</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- Camera Control -->
+            <div class="card">
+                <h2>📷 Camera Control</h2>
+                <div class="control-group">
+                    <label>Exposure (ms)</label>
+                    <input type="number" id="exposure" value="100" min="1" max="1000">
+                </div>
+                <div class="control-group">
+                    <label>Gain</label>
+                    <input type="number" id="gain" value="1.0" min="0.1" max="10" step="0.1">
+                </div>
+                <button onclick="captureImage()" class="success">Capture Image</button>
+            </div>
+
+            <!-- Stage Control -->
+            <div class="card">
+                <h2>🎯 Stage Control</h2>
+                <div class="position-display" id="position-display">
+                    <div>X: <span id="pos-x">0</span></div>
+                    <div>Y: <span id="pos-y">0</span></div>
+                    <div>Z: <span id="pos-z">0</span></div>
+                </div>
+
+                <div class="stage-control">
+                    <div></div>
+                    <button onclick="moveRelative(0, 100, 0)">↑ Y+</button>
+                    <div></div>
+                    <button onclick="moveRelative(-100, 0, 0)">← X-</button>
+                    <button onclick="homeStage()" class="center">⌂ Home</button>
+                    <button onclick="moveRelative(100, 0, 0)">X+ →</button>
+                    <div></div>
+                    <button onclick="moveRelative(0, -100, 0)">↓ Y-</button>
+                    <div></div>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="moveRelative(0, 0, 10)">Z+ ↑</button>
+                    <button onclick="moveRelative(0, 0, -10)">Z- ↓</button>
+                    <button onclick="emergencyStop()" class="danger">⛔ STOP</button>
+                </div>
+            </div>
+
+            <!-- Job Control -->
+            <div class="card">
+                <h2>⚙️ Job Control</h2>
+                <div class="button-group">
+                    <button onclick="createTimelapseJob()">⏱️ Timelapse</button>
+                    <button onclick="createGridJob()">🔲 Grid Scan</button>
+                    <button onclick="createZStackJob()">📚 Z-Stack</button>
+                </div>
+                <div id="job-list" style="margin-top: 15px;">
+                    <p style="color: #666; font-size: 14px;">No active jobs</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Images Section -->
+        <div class="card">
+            <h2>🖼️ Recent Images</h2>
+            <div class="image-gallery" id="image-gallery">
+                <div class="image-item">No images</div>
+            </div>
+        </div>
+
+        <!-- Console Log -->
+        <div class="card">
+            <h2>📋 Console</h2>
+            <div class="websocket-status" id="ws-status">WebSocket: Disconnected</div>
+            <div class="log-container" id="log-container">
+                <div class="log-entry info">System initialized</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const WS_URL = 'ws://localhost:8000';
+        let ws = null;
+
+        // Initialize
+        async function init() {
+            await updateStatus();
+            await updatePosition();
+            await loadImages();
+            connectWebSocket();
+
+            // Poll position every 2 seconds
+            setInterval(updatePosition, 2000);
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(`${WS_URL}/ws`);
+
+                ws.onopen = () => {
+                    log('WebSocket connected', 'success');
+                    document.getElementById('ws-status').className = 'websocket-status connected';
+                    document.getElementById('ws-status').textContent = 'WebSocket: Connected';
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                ws.onclose = () => {
+                    log('WebSocket disconnected', 'error');
+                    document.getElementById('ws-status').className = 'websocket-status disconnected';
+                    document.getElementById('ws-status').textContent = 'WebSocket: Disconnected';
+
+                    // Reconnect after 5 seconds
+                    setTimeout(connectWebSocket, 5000);
+                };
+
+                ws.onerror = (error) => {
+                    log('WebSocket error', 'error');
+                };
+            } catch (error) {
+                log(`WebSocket connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'position':
+                    updatePositionDisplay(data.data);
+                    break;
+                case 'image_captured':
+                    log(`Image captured: ${data.data.filename}`, 'success');
+                    loadImages();
+                    break;
+                case 'job_progress':
+                    log(`Job ${data.data.job_id}: ${data.data.progress}/${data.data.total_steps}`, 'info');
+                    break;
+                case 'error':
+                    log(`${data.data.component}: ${data.data.message}`, 'error');
+                    break;
+            }
+        }
+
+        // Update system status
+        async function updateStatus() {
+            try {
+                const response = await fetch(`${API_URL}/api/control/status`);
+                const status = await response.json();
+
+                document.getElementById('camera-status').className =
+                    `status-indicator ${status.camera === 'connected' ? 'connected' : 'disconnected'}`;
+                document.getElementById('stage-status').className =
+                    `status-indicator ${status.stage === 'connected' ? 'connected' : 'disconnected'}`;
+                document.getElementById('db-status').className =
+                    `status-indicator ${status.database === 'connected' ? 'connected' : 'disconnected'}`;
+            } catch (error) {
+                log(`Failed to update status: ${error.message}`, 'error');
+            }
+        }
+
+        // Update position display
+        async function updatePosition() {
+            try {
+                const response = await fetch(`${API_URL}/api/control/position`);
+                const position = await response.json();
+                updatePositionDisplay(position);
+            } catch (error) {
+                console.error('Failed to update position:', error);
+            }
+        }
+
+        function updatePositionDisplay(position) {
+            document.getElementById('pos-x').textContent = position.x.toFixed(1);
+            document.getElementById('pos-y').textContent = position.y.toFixed(1);
+            document.getElementById('pos-z').textContent = position.z.toFixed(1);
+        }
+
+        // Camera control
+        async function captureImage() {
+            try {
+                const exposure = parseInt(document.getElementById('exposure').value);
+                const gain = parseFloat(document.getElementById('gain').value);
+
+                const response = await fetch(`${API_URL}/api/control/capture`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exposure, gain })
+                });
+
+                const result = await response.json();
+                log(`Image captured: ${result.filename}`, 'success');
+                await loadImages();
+            } catch (error) {
+                log(`Capture failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Stage control
+        async function moveRelative(x, y, z) {
+            try {
+                const response = await fetch(`${API_URL}/api/control/move`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x, y, z, relative: true })
+                });
+
+                const result = await response.json();
+                log(`Moving to X:${result.target_position.x} Y:${result.target_position.y} Z:${result.target_position.z}`, 'info');
+                await updatePosition();
+            } catch (error) {
+                log(`Move failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function homeStage() {
+            try {
+                const response = await fetch(`${API_URL}/api/control/home`, {
+                    method: 'POST'
+                });
+                log('Homing all axes...', 'info');
+                setTimeout(updatePosition, 1000);
+            } catch (error) {
+                log(`Home failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function emergencyStop() {
+            try {
+                const response = await fetch(`${API_URL}/api/control/stop`, {
+                    method: 'POST'
+                });
+                log('Emergency stop activated!', 'error');
+            } catch (error) {
+                log(`Stop failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Job creation
+        async function createTimelapseJob() {
+            try {
+                const response = await fetch(`${API_URL}/api/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test Timelapse',
+                        job_type: 'timelapse',
+                        parameters: {
+                            interval: 5,
+                            duration: 60,
+                            exposure: 100,
+                            gain: 1.0
+                        }
+                    })
+                });
+
+                const job = await response.json();
+                log(`Timelapse job created: ${job.name}`, 'success');
+            } catch (error) {
+                log(`Job creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function createGridJob() {
+            try {
+                const response = await fetch(`${API_URL}/api/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test Grid Scan',
+                        job_type: 'grid',
+                        parameters: {
+                            start_x: 0,
+                            end_x: 500,
+                            step_x: 100,
+                            start_y: 0,
+                            end_y: 500,
+                            step_y: 100,
+                            z_position: 0,
+                            exposure: 100,
+                            gain: 1.0
+                        }
+                    })
+                });
+
+                const job = await response.json();
+                log(`Grid scan job created: ${job.name}`, 'success');
+            } catch (error) {
+                log(`Job creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function createZStackJob() {
+            try {
+                const response = await fetch(`${API_URL}/api/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test Z-Stack',
+                        job_type: 'zstack',
+                        parameters: {
+                            x_position: 0,
+                            y_position: 0,
+                            start_z: 0,
+                            end_z: 200,
+                            step_z: 50,
+                            exposure: 100,
+                            gain: 1.0
+                        }
+                    })
+                });
+
+                const job = await response.json();
+                log(`Z-stack job created: ${job.name}`, 'success');
+            } catch (error) {
+                log(`Job creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Load images
+        async function loadImages() {
+            try {
+                const response = await fetch(`${API_URL}/api/images?limit=20`);
+                const data = await response.json();
+
+                const gallery = document.getElementById('image-gallery');
+                if (data.images.length === 0) {
+                    gallery.innerHTML = '<div class="image-item">No images</div>';
+                } else {
+                    gallery.innerHTML = data.images.map(img =>
+                        `<div class="image-item" title="${img.filename}">${img.id}</div>`
+                    ).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load images:', error);
+            }
+        }
+
+        // Logging
+        function log(message, type = 'info') {
+            const container = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
