@@ -10,22 +10,22 @@
 
     <div class="stage-control">
       <div></div>
-      <button @click="move(0, 100, 0)" :disabled="stage.isMoving.value">↑ Y+</button>
+      <button @click="move(0, 100, 0)" :disabled="stage.isMoving.value" class="btn">↑ Y+</button>
       <div></div>
 
-      <button @click="move(-100, 0, 0)" :disabled="stage.isMoving.value">← X-</button>
-      <button @click="stage.home()" class="center" :disabled="stage.isMoving.value">⌂ Home</button>
-      <button @click="move(100, 0, 0)" :disabled="stage.isMoving.value">X+ →</button>
+      <button @click="move(-100, 0, 0)" :disabled="stage.isMoving.value" class="btn">← X-</button>
+      <button @click="stage.home()" class="center btn" :disabled="stage.isMoving.value">⌂ Home</button>
+      <button @click="move(100, 0, 0)" :disabled="stage.isMoving.value" class="btn">X+ →</button>
 
       <div></div>
-      <button @click="move(0, -100, 0)" :disabled="stage.isMoving.value">↓ Y-</button>
+      <button @click="move(0, -100, 0)" :disabled="stage.isMoving.value" class="btn">↓ Y-</button>
       <div></div>
     </div>
 
     <div class="button-group">
-      <button @click="move(0, 0, 10)" :disabled="stage.isMoving.value">Z+ ↑</button>
-      <button @click="move(0, 0, -10)" :disabled="stage.isMoving.value">Z- ↓</button>
-      <button @click="stage.stop()" class="danger">⛔ STOP</button>
+      <button @click="move(0, 0, 10)" :disabled="stage.isMoving.value" class="btn">Z+ ↑</button>
+      <button @click="move(0, 0, -10)" :disabled="stage.isMoving.value" class="btn">Z- ↓</button>
+      <button @click="stage.stop()" class="btn btn-danger">⛔ STOP</button>
     </div>
   </div>
 </template>
@@ -60,50 +60,28 @@ async function move(x: number, y: number, z: number) {
 
 <style scoped>
 .position-display {
-  background: #f5f5f5;
-  padding: 15px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-family: monospace;
+  @apply bg-gray-100 p-4 rounded mb-4 font-mono;
 }
 
 .position-display div {
-  margin-bottom: 5px;
+  @apply mb-1;
 }
 
 .stage-control {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 15px;
+  @apply gap-2.5 mb-4;
 }
 
 .stage-control button {
-  padding: 15px;
+  @apply p-4;
 }
 
 .stage-control .center {
-  background: #FF5722;
+  @apply bg-orange-600;
 }
 
 .stage-control .center:hover:not(:disabled) {
-  background: #E64A19;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-}
-
-.button-group button {
-  flex: 1;
-}
-
-button.danger {
-  background: #f44336;
-}
-
-button.danger:hover {
-  background: #d32f2f;
+  @apply bg-orange-700;
 }
 </style>
